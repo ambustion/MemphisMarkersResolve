@@ -1,7 +1,7 @@
 # ResolveMarkersPanel
 Import list of Markers for Davinci Resolve
 
-![](/preview/ScreenCapture2.JPG)
+![](/ScreenCapture2.JPG)
 
 This module allows you to import a Comma Separated List of notes for Davinci Resolve timelines and manipulate markers colors. You can choose to either import individual marks at specific timecodes, or have them span clips located at each timecode. 
 
