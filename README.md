@@ -1,6 +1,8 @@
 # ResolveMarkersPanel
 Import list of Markers for Davinci Resolve
 
+![alt text](https://github.com/ambustion/ResolveMarkersPanel/blob/Master/ScreenCapture2.jpg?raw=true)
+
 This module allows you to import a Comma Separated List of notes for Davinci Resolve timelines and manipulate markers colors. You can choose to either import individual marks at specific timecodes, or have them span clips located at each timecode. 
 
 Primarily this is used for creating VFX markers and adding notes for grabbing stills or making changes. 
