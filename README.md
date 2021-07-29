@@ -1,5 +1,5 @@
-# ResolveMarkersPanel
-Import list of Markers for Davinci Resolve
+# Memphis Markers for Davinci Resolve
+Import, Review and export lists of Markers for Davinci Resolve
 
 ![](/ScreenCapture2.JPG)
 
