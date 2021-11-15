@@ -188,6 +188,7 @@ def create_table():
     Colors = MarkerColors(NoteList)
     print("Color list is: " + str(Colors))
     NoteListwColors = []
+    print(NoteList)
     for x in NoteList:
         print(x)
         for y in Colors:
@@ -306,7 +307,7 @@ def GetCSV(file):
     #global colMap
     NoteList = []
     HeaderList = []
-    with open(file, 'r') as csvfile:
+    with open(file, 'r',encoding="utf8") as csvfile:
         reader = csv.DictReader(csvfile)
         fieldnames = reader.fieldnames
         HeaderList = fieldnames
@@ -372,10 +373,12 @@ def GetCSV(file):
     NoteListwColors = []
 
     for x in NoteList:
+        print(x)
         for y in Colors:
             print(y)
             if x[1] == y[0]:
-                newitem = x[0],x[1],x[2],x[3],y[1],x[4]
+                #newitem = x[0],x[1],x[2],x[3],y[1],x[4]
+                newitem = x[0], x[1], x[2], x[3], y[1]
                 print("printing newitem")
                 print(newitem)
                 NoteListwColors.append(newitem)
@@ -387,7 +390,7 @@ def GetCSV(file):
         itRow.Text[2] = str(x[2])
         itRow.Text[3] = str(x[3])
         itRow.Text[4] = str(x[4])
-        itRow.Text[5] = str(x[5])
+        #itRow.Text[5] = str(x[5])
         itRow.BackgroundColor[4] = {"R": FUColors.get(str(x[4]))[0], "G": FUColors.get(str(x[4]))[1], "B": FUColors.get(str(x[4]))[2], "A": 1}
         itRow.TextColor[4] = {"R":0,"G":0,"B":0,"A":1}
         itm['Tree'].AddTopLevelItem(itRow)
@@ -399,7 +402,8 @@ def change_colors(Category, NewColor):
         print(x)
 
         if x[1] == Category:
-            tmpitem = x[0],x[1],x[2],x[3],NewColor,x[5]
+            #tmpitem = x[0],x[1],x[2],x[3],NewColor,x[5]
+            tmpitem = x[0], x[1], x[2], x[3], NewColor
             NewMarks.append(tmpitem)
         else:
             NewMarks.append(x)
@@ -422,7 +426,7 @@ def change_colors(Category, NewColor):
         itRow.Text[2] = str(x[2])
         itRow.Text[3] = str(x[3])
         itRow.Text[4] = str(x[4])
-        itRow.Text[5] = str(x[5])
+        #itRow.Text[5] = str(x[5])
         itRow.BackgroundColor[4] = {"R": FUColors.get(str(x[4]))[0], "G": FUColors.get(str(x[4]))[1],
                                     "B": FUColors.get(str(x[4]))[2], "A": 1}
         itRow.TextColor[4] = {"R": 0, "G": 0, "B": 0, "A": 1}
@@ -449,7 +453,7 @@ def MarkDictCleaner():
     TLMarks = timeline.GetMarkers()
     for x in TLMarks:
         MarkDict = TLMarks.get(x)
-        print(x)
+        #print(x)
         TC = s.gettc(x + int(startFrame))
         # rint(str(MarkDict["color"]))
         color = str(MarkDict["color"])
@@ -459,7 +463,7 @@ def MarkDictCleaner():
         duration = str(MarkDict["duration"])
         customData = str(MarkDict["customData"])
         markDictclean.append({"color":color,"timecode":TC,"name":name,"note":note,"duration":duration,"customData":customData})
-    print(markDictclean)
+    #print(markDictclean)
     return markDictclean
 
 
@@ -660,6 +664,17 @@ def CSVExport(dict):
             writer.writerow([x["color"],x["timecode"],x["name"],x["note"].encode("latin1","ignore"),x["duration"],x["customData"]])
     print("exporting generic CSV")
 
+#def render(MarkIn,MarkOut,TargetDir,CustomName,ExportVideo,ExportAudio,FormatWidth,FormatHeight,Framerate,VideoQuality,AudioCodec)
+
+def GetClipsUnderColor(ColorSelected,Marks):
+
+    TLMarksColor = []
+    for Mark in Marks:
+        if Mark['color'] == ColorSelected:
+            TLMarksColor.append(Mark)
+
+    return TLMarksColor
+
 def TLMarkWin():
     timeline = project.GetCurrentTimeline()
     TimelineText = timeline.GetName()
@@ -729,6 +744,18 @@ def TLMarkWin():
                                             #{"ID": "TemplateButton", "Text": "Generate CSV Template", "Weight": 0.5})
                                         ]),
                           ui.VGap(0, .2),
+                          ui.HGroup({"Spacing": "2", "Alignment": {"AlignHCenter": True}},
+                                    [
+                                        ui.VGap(0, .2),
+                                        ui.Button({"ID": "RenderInd", "Text": "Export all clips under marker", "Weight": 0}),
+                                        ui.ComboBox({"ID": "RenderColor", "Weight": 0}),
+                                        ui.Button({"ID": "RenderClip", "Text": "Render all clips of color", "Weight": 0}),
+                                        ui.HGap(0, .5),
+
+                                        # ui.Button(
+                                        # {"ID": "TemplateButton", "Text": "Generate CSV Template", "Weight": 0.5})
+                                    ]),
+                          ui.VGap(0, .2),
                           ui.Label({"ID": "dblClick", "Text": "Double Click to go to note('color or deliver page only!)", "Weight": 2,"Alignment": {"AlignHCenter": True}}),
                       ]),
         ])
@@ -737,6 +764,9 @@ def TLMarkWin():
     TLMarks = GetCurrentMarks()
     for x in AvidTracks:
         itm["AvidTrack"].AddItem(x)
+
+    for x in ColorList:
+        itm["RenderColor"].AddItem(x)
 
     ###close the about window
     def _func(ev):
@@ -756,6 +786,16 @@ def TLMarkWin():
         AvidMarkerExport(cleanMarks,track)
 
     TLwin.On.AvidExport.Clicked = _func
+
+    def _func(ev):
+        cleanMarks = MarkDictCleaner()
+
+        ColorSelected = itm['RenderColor'].GetCurrentText()
+
+        RenderList = GetClipsUnderColor(ColorSelected,cleanMarks)
+        print(RenderList)
+
+    TLwin.On.RenderInd.Clicked = _func
 
     def _func(ev):
         cleanMarks = MarkDictCleaner()
