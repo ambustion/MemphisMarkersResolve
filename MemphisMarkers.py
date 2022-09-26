@@ -11,9 +11,33 @@ import os
 import csv
 #from timecode import Timecode
 from SMPTE import SMPTE
-import ResolveTransport as rt
+#import ResolveTransport as rt
 
+###env initialization
+import sys
+import os
+from sys import platform
+if platform == "linux" or platform == "linux2":
+    env = "linux"
+    Resolve_Loc = r'/opt/resolve/Developer/Scripting/Modules'
+    print("Linux OS")
+elif platform == "darwin":
+    env = "mac"
+    Resolve_Loc=r'/Library/Application Support/Blackmagic Design/DaVinci Resolve/Developer/Scripting/Modules'
+    print("System is mac OS")
+elif platform == "win32":
+    env = "win"
+    Resolve_Loc=r'C:\ProgramData\Blackmagic Design\DaVinci Resolve\Support\Developer\Scripting\Modules'
+    print("Windows OS")
+else:
+    print("error getting system platform")
+sys.path.insert(1,Resolve_Loc)
+import DaVinciResolveScript as bmd
 
+ScriptDir = os.path.dirname(os.path.realpath(sys.argv[0]))
+fu = bmd.scriptapp('Fusion')
+resolve = bmd.scriptapp('Resolve')
+print(resolve)
 
 s = SMPTE()
 
@@ -68,7 +92,7 @@ TimelineText = "Timeline Clips - " + timeline.GetName()
 dataLoaded = False
 prefix = ""
 NoteList = []
-ColorList = ["Blue","Green","Yellow","Red","Pink","Purple","Fuschia", "Rose","Lavendar","Sky","Mint","Lemon", "Sand", "Cocoa", "Cream","Cyan"]
+MarkerColorList = ["Blue","Green","Yellow","Red","Pink","Purple","Fuschia", "Rose","Lavendar","Sky","Mint","Lemon", "Sand", "Cocoa", "Cream","Cyan"]
 ClipColorList = ["Orange","Apricot","Yellow","Lime","Olive","Green","Teal", "Navy","Blue","Purple","Violet","Pink", "Tan", "Beige", "Brown","Chocolate"]
 
 ColorListVals = dict(Blue=[0, 0, 255], Green=[0, 255, 0], Yellow=[255, 255, 0], Red=[255, 0, 0], Pink=[255, 85, 255],
@@ -188,7 +212,6 @@ def create_table():
     Colors = MarkerColors(NoteList)
     print("Color list is: " + str(Colors))
     NoteListwColors = []
-    print(NoteList)
     for x in NoteList:
         print(x)
         for y in Colors:
@@ -307,7 +330,7 @@ def GetCSV(file):
     #global colMap
     NoteList = []
     HeaderList = []
-    with open(file, 'r',encoding="utf8") as csvfile:
+    with open(file, 'r') as csvfile:
         reader = csv.DictReader(csvfile)
         fieldnames = reader.fieldnames
         HeaderList = fieldnames
@@ -373,12 +396,10 @@ def GetCSV(file):
     NoteListwColors = []
 
     for x in NoteList:
-        print(x)
         for y in Colors:
             print(y)
             if x[1] == y[0]:
-                #newitem = x[0],x[1],x[2],x[3],y[1],x[4]
-                newitem = x[0], x[1], x[2], x[3], y[1]
+                newitem = x[0],x[1],x[2],x[3],y[1],x[4]
                 print("printing newitem")
                 print(newitem)
                 NoteListwColors.append(newitem)
@@ -390,7 +411,7 @@ def GetCSV(file):
         itRow.Text[2] = str(x[2])
         itRow.Text[3] = str(x[3])
         itRow.Text[4] = str(x[4])
-        #itRow.Text[5] = str(x[5])
+        itRow.Text[5] = str(x[5])
         itRow.BackgroundColor[4] = {"R": FUColors.get(str(x[4]))[0], "G": FUColors.get(str(x[4]))[1], "B": FUColors.get(str(x[4]))[2], "A": 1}
         itRow.TextColor[4] = {"R":0,"G":0,"B":0,"A":1}
         itm['Tree'].AddTopLevelItem(itRow)
@@ -402,8 +423,7 @@ def change_colors(Category, NewColor):
         print(x)
 
         if x[1] == Category:
-            #tmpitem = x[0],x[1],x[2],x[3],NewColor,x[5]
-            tmpitem = x[0], x[1], x[2], x[3], NewColor
+            tmpitem = x[0],x[1],x[2],x[3],NewColor,x[5]
             NewMarks.append(tmpitem)
         else:
             NewMarks.append(x)
@@ -426,7 +446,7 @@ def change_colors(Category, NewColor):
         itRow.Text[2] = str(x[2])
         itRow.Text[3] = str(x[3])
         itRow.Text[4] = str(x[4])
-        #itRow.Text[5] = str(x[5])
+        itRow.Text[5] = str(x[5])
         itRow.BackgroundColor[4] = {"R": FUColors.get(str(x[4]))[0], "G": FUColors.get(str(x[4]))[1],
                                     "B": FUColors.get(str(x[4]))[2], "A": 1}
         itRow.TextColor[4] = {"R": 0, "G": 0, "B": 0, "A": 1}
@@ -453,7 +473,7 @@ def MarkDictCleaner():
     TLMarks = timeline.GetMarkers()
     for x in TLMarks:
         MarkDict = TLMarks.get(x)
-        #print(x)
+        print(x)
         TC = s.gettc(x + int(startFrame))
         # rint(str(MarkDict["color"]))
         color = str(MarkDict["color"])
@@ -463,7 +483,7 @@ def MarkDictCleaner():
         duration = str(MarkDict["duration"])
         customData = str(MarkDict["customData"])
         markDictclean.append({"color":color,"timecode":TC,"name":name,"note":note,"duration":duration,"customData":customData})
-    #print(markDictclean)
+    print(markDictclean)
     return markDictclean
 
 
@@ -664,17 +684,6 @@ def CSVExport(dict):
             writer.writerow([x["color"],x["timecode"],x["name"],x["note"].encode("latin1","ignore"),x["duration"],x["customData"]])
     print("exporting generic CSV")
 
-#def render(MarkIn,MarkOut,TargetDir,CustomName,ExportVideo,ExportAudio,FormatWidth,FormatHeight,Framerate,VideoQuality,AudioCodec)
-
-def GetClipsUnderColor(ColorSelected,Marks):
-
-    TLMarksColor = []
-    for Mark in Marks:
-        if Mark['color'] == ColorSelected:
-            TLMarksColor.append(Mark)
-
-    return TLMarksColor
-
 def TLMarkWin():
     timeline = project.GetCurrentTimeline()
     TimelineText = timeline.GetName()
@@ -744,18 +753,6 @@ def TLMarkWin():
                                             #{"ID": "TemplateButton", "Text": "Generate CSV Template", "Weight": 0.5})
                                         ]),
                           ui.VGap(0, .2),
-                          ui.HGroup({"Spacing": "2", "Alignment": {"AlignHCenter": True}},
-                                    [
-                                        ui.VGap(0, .2),
-                                        ui.Button({"ID": "RenderInd", "Text": "Export all clips under marker", "Weight": 0}),
-                                        ui.ComboBox({"ID": "RenderColor", "Weight": 0}),
-                                        ui.Button({"ID": "RenderClip", "Text": "Render all clips of color", "Weight": 0}),
-                                        ui.HGap(0, .5),
-
-                                        # ui.Button(
-                                        # {"ID": "TemplateButton", "Text": "Generate CSV Template", "Weight": 0.5})
-                                    ]),
-                          ui.VGap(0, .2),
                           ui.Label({"ID": "dblClick", "Text": "Double Click to go to note('color or deliver page only!)", "Weight": 2,"Alignment": {"AlignHCenter": True}}),
                       ]),
         ])
@@ -765,9 +762,6 @@ def TLMarkWin():
     for x in AvidTracks:
         itm["AvidTrack"].AddItem(x)
 
-    for x in ColorList:
-        itm["RenderColor"].AddItem(x)
-
     ###close the about window
     def _func(ev):
         disp.ExitLoop()
@@ -776,7 +770,7 @@ def TLMarkWin():
 
     def _func(ev):
         print(ev['item'].Text[1])
-        rt.settc(ev['item'].Text[1])
+        timeline.SetCurrentTimecode(ev['item'].Text[1])
 
     TLwin.On.TLTree.ItemDoubleClicked = _func
 
@@ -786,16 +780,6 @@ def TLMarkWin():
         AvidMarkerExport(cleanMarks,track)
 
     TLwin.On.AvidExport.Clicked = _func
-
-    def _func(ev):
-        cleanMarks = MarkDictCleaner()
-
-        ColorSelected = itm['RenderColor'].GetCurrentText()
-
-        RenderList = GetClipsUnderColor(ColorSelected,cleanMarks)
-        print(RenderList)
-
-    TLwin.On.RenderInd.Clicked = _func
 
     def _func(ev):
         cleanMarks = MarkDictCleaner()
@@ -809,7 +793,7 @@ def TLMarkWin():
 
 def ColorSelect(Category, currentColor):
 
-    global ColorList
+    global MarkerColorList
     global colwin
 
     width, height = 500, 250
@@ -830,7 +814,7 @@ def ColorSelect(Category, currentColor):
     itm = colwin.GetItems()
     mainitm = dlg.GetItems()
     if mainitm["CorFBox"].CurrentText == "Markers":
-        for x in ColorList:
+        for x in MarkerColorList:
             itm["ColSel"].AddItem(x)
     elif mainitm["CorFBox"].CurrentText == "Clip Colors":
         for x in ClipColorList:
@@ -858,6 +842,8 @@ dlg = disp.AddWindow({"WindowTitle": "Memphis Markers", "ID": "MyWin", "Geometry
                          ui.VGroup({"Spacing": 2, },
                                    [
                                        # Add your GUI elements here:
+                                       ui.TabBar({"ID":"TabBar"}),
+
                                        ui.Label({"ID": "Timeline", "Text": TimelineText, "Weight": 0.5}),
                                        ui.Tree({"ID": "Tree", "SortingEnabled": True,
                                                 "Events": {"ItemDoubleClicked": True, "ItemClicked": True}}),
@@ -897,6 +883,7 @@ dlg = disp.AddWindow({"WindowTitle": "Memphis Markers", "ID": "MyWin", "Geometry
                      ])
 
 itm = dlg.GetItems()
+itm['TabBar'].AddTab()
 itm["CorFBox"].AddItem("Markers")
 itm["CorFBox"].AddItem("Clip Colors")
 
