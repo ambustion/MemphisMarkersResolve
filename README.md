@@ -10,8 +10,6 @@ Primarily this is used for creating VFX markers and adding notes for grabbing st
 Relies on Igor Ridanovic's module for timecode, located here: https://github.com/IgorRidanovic/smpte/blob/master/SMPTE.py
 Just put that in your Resolve Scripting Modules Location and if your scripting environment is set up correctly it should work.
 
-I've also included a basic module for transport control within the script. If you want to jump around to current timeline markers you can double click on any entry within the Current Timeline Markers window. This helps with review. You'll also have to add ResolveTransport.py to your modules folder and add System.Remote.Control = 1 to the advanced settings in your resolve preferences(the big blank text box in settings). 
-
 SCRIPT LOCATIONS:
 
     Mac OS X:
