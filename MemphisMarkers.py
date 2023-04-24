@@ -6,7 +6,7 @@
 from tkinter import filedialog
 from tkinter import *
 import time
-
+import re
 import os
 import csv
 #from timecode import Timecode
@@ -33,11 +33,13 @@ else:
     print("error getting system platform")
 sys.path.insert(1,Resolve_Loc)
 import DaVinciResolveScript as bmd
-
+print(bmd.scriptapp('Resolve'))
+#import python_get_resolve
+#print(dir(bmd.scriptapp('Resolve')))
 ScriptDir = os.path.dirname(os.path.realpath(sys.argv[0]))
 fu = bmd.scriptapp('Fusion')
-resolve = bmd.scriptapp('Resolve')
-print(resolve)
+#resolve = bmd.scriptapp('Resolve')
+#print(resolve)
 
 s = SMPTE()
 
@@ -59,7 +61,10 @@ project = projectManager.GetCurrentProject()
 timeline = project.GetCurrentTimeline()
 startFrame = timeline.GetStartFrame()
 fps = timeline.GetSetting('timelineFrameRate')
+if fps == str(23):
+    fps = 23.98
 s.fps = fps
+
 print(fps)
 print(startFrame)
 
@@ -135,19 +140,25 @@ def Add_Colors_To_Clips(notes):
         start = x.GetStart()
         dur = x.GetDuration()
         end = x.GetEnd()
-        ClipRanges.append({"start":start,"dur":dur, "end":end})
+        ClipRanges.append({'clip':x,"start":start,"dur":dur, "end":end})
 
     Span_Marks = []
     for x in notes:
         for y in ClipRanges:
-            if y["start"] < int(s.getframes(x[2])) and y["end"] > int(s.getframes(x[2])):
-                padded = x[0].zfill(3)
-                name = prefix + padded
-                span = y["start"] - startFrame
-                Span_Marks.append([span,x[4],name,x[1] + " " + x[3],y["dur"]])
+            try:
+                if y["start"] < int(s.getframes(x[2])) and y["end"] > int(s.getframes(x[2])):
+                    padded = x[0].zfill(3)
+                    name = prefix + padded
+                    span = y["start"] - startFrame
+                    Span_Marks.append([span,x[4],name,x[1] + " " + x[3],y["dur"],y['clip']])
 
+            except:
+                print("trouble adding spanned marks")
+                continue
     for x in Span_Marks:
         timeline.AddMarker(int(x[0]), str(x[1]), str(x[2]), str(x[3]),int(x[4]))
+        print(str(x[1]))
+        mpItem = x[5].SetClipColor(x[1])
 
 def Add_Markers_To_Clips(notes):
     global timeline
@@ -163,9 +174,7 @@ def Add_Markers_To_Clips(notes):
             print()
         else:
             for y in tmpclipList:
-
-
-                    clipList.append(y)
+                clipList.append(y)
 
 
 
@@ -182,12 +191,16 @@ def Add_Markers_To_Clips(notes):
     Span_Marks = []
     for x in notes:
         for y in ClipRanges:
-            if y["start"] < int(s.getframes(x[2])) and y["end"] > int(s.getframes(x[2])):
+            try:
+                if y["start"] < int(s.getframes(x[2])) and y["end"] > int(s.getframes(x[2])):
 
-                padded = x[0].zfill(3)
-                name = prefix + padded
-                span = y["start"] - startFrame
-                Span_Marks.append([span,x[4],name,x[1] + " " + x[3],y["dur"]])
+                    padded = x[0].zfill(3)
+                    name = prefix + padded
+                    span = y["start"] - startFrame
+                    Span_Marks.append([span,x[4],name,x[1] + " " + x[3],y["dur"]])
+            except:
+                print("trouble adding " + str(x))
+                continue
     for x in Span_Marks:
         print(x)
         timeline.AddMarker(int(x[0]), str(x[1]), str(x[2]), str(x[3]),int(x[4]))
@@ -330,7 +343,7 @@ def GetCSV(file):
     #global colMap
     NoteList = []
     HeaderList = []
-    with open(file, 'r') as csvfile:
+    with open(file, 'r',errors='ignore') as csvfile:
         reader = csv.DictReader(csvfile)
         fieldnames = reader.fieldnames
         HeaderList = fieldnames
@@ -502,27 +515,35 @@ def addMarks(Marks):
     #print(cleanList)
     for x in Marks:
         #print(x)
+        try:
+            Event = str(x[0])
+            print(Event)
+            padded = Event.zfill(3)
+            name = prefix+padded
+            print(name)
+            Description = str(x[3])
+            print(Description)
+            Department = str(x[1])
+            print(Department)
+            Time = x[2]
+            print(Time)
+            frameID = int(s.getframes(x[2])) - int(startFrame)
+            print(frameID)
+            color = str(x[4])
+            print(color)
+            print("marker color will be " + color)
+            print("marker to frames " + str(int(s.getframes(x[2]))))
+            print("startframe" + str(startFrame))
+            print(frameID)
 
-        Event = str(x[0])
-        padded = Event.zfill(3)
-        name = prefix+padded
 
-        Description = str(x[3])
-        Department = str(x[1])
-
-        Time = x[2]
-        frameID = int(s.getframes(x[2])) - int(startFrame)
-        color = str(x[4])
-        print("marker color will be " + color)
-        print("marker to frames " + str(int(s.getframes(x[2]))))
-        print("startframe" + str(startFrame))
-        print(frameID)
+            print("Timecode" + Time)
 
 
-        print("Timecode" + Time)
-
-
-        timeline.AddMarker(frameID, color, name, Description + " - " + Department, 1)
+            timeline.AddMarker(frameID, color, name, Description + " - " + Department, 1)
+        except Exception as e:
+            print("couldn't add marks")
+            print(e)
 
 
 
@@ -542,12 +563,18 @@ def MarkerColors(Data):
     print(Categories)
     CatColors = []
     mainitm = dlg.GetItems()
-    for x in Categories:
-        CatIndex = Categories.index(x)
-        if mainitm["CorFBox"].CurrentText == "Markers":
-            CatColors.append(ColorList[CatIndex])
-        elif mainitm["CorFBox"].CurrentText == "Clip Colors":
-            CatColors.append(ClipColorList[CatIndex])
+
+    try:
+        for x in Categories:
+        #print(x)
+            CatIndex = Categories.index(x)
+            if mainitm["CorFBox"].CurrentText == "Markers":
+                CatColors.append(MarkerColorList[CatIndex])
+            elif mainitm["CorFBox"].CurrentText == "Clip Colors":
+                CatColors.append(ClipColorList[CatIndex])
+    except Exception as e:
+        print("possibly too many departments for number of marker colors?")
+        print(e)
     CatColorList = tuple(zip(Categories,CatColors))
     print(CatColorList)
     return CatColorList
@@ -938,8 +965,8 @@ def _func(ev):
     itm['Status'].Text = "Getting Colors and adding metadata..."
     Add_Colors_To_Clips(NoteListwColors)
     itm['Status'].Text = "Finished"
-dlg.On.MarksButton.Clicked = _func
-
+dlg.On.ColorsButton.Clicked = _func
+#????
 def _func(ev):
     itm['Status'].Text = "Getting Markers"
     addMarks(NoteListwColors)
