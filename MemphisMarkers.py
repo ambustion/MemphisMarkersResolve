@@ -3,15 +3,13 @@
 # Memphis Markers - Improved Marker system for Davinci resolve. Import and export markers from Davinci Resolve.
 # Copyright 2021, Brendon Rathbone
 
-from tkinter import filedialog
+
 from tkinter import *
 import time
 import re
-import os
 import csv
-#from timecode import Timecode
 from SMPTE import SMPTE
-#import ResolveTransport as rt
+
 
 ###env initialization
 import sys
@@ -33,13 +31,11 @@ else:
     print("error getting system platform")
 sys.path.insert(1,Resolve_Loc)
 import DaVinciResolveScript as bmd
+ScriptDir=os.path.dirname(os.path.realpath(sys.argv[0]))
 print(bmd.scriptapp('Resolve'))
-#import python_get_resolve
-#print(dir(bmd.scriptapp('Resolve')))
 ScriptDir = os.path.dirname(os.path.realpath(sys.argv[0]))
 fu = bmd.scriptapp('Fusion')
-#resolve = bmd.scriptapp('Resolve')
-#print(resolve)
+resolve = bmd.scriptapp('Resolve')
 
 s = SMPTE()
 
@@ -58,7 +54,11 @@ ClipsBool = True
 
 projectManager = resolve.GetProjectManager()
 project = projectManager.GetCurrentProject()
-timeline = project.GetCurrentTimeline()
+try:
+    timeline = project.GetCurrentTimeline()
+except exception as e:
+    print(e)
+    print("ensure timeline is loaded before opening memphis markers")
 startFrame = timeline.GetStartFrame()
 fps = timeline.GetSetting('timelineFrameRate')
 if fps == str(23):
@@ -87,8 +87,8 @@ clip_list = []
 CDL_List = []
 NoteListwColors = []
 colMap = {"Event":0,"Department":1,"timecode":2,"Description":3,"Timecode-out":5}
-aboutText2 = "Copyright Brendon Rathbone 2021."
-aboutText3 = '<h1>About Dialog</h1>\n<p>Version 0.5 - July 26 2021</p>\n<p>Memphis Markers is a simple program to import lists of notes into timeline markers within Davinci Resolve <p>\n<p>Copyright &copy; 2021 Brendon Rathbone.</p>'
+aboutText2 = "Copyright GPL 3.0 Brendon Rathbone 2024."
+aboutText3 = '<h1>About Dialog</h1>\n<p>Version 0.6 - Nov 27 2024</p>\n<p>Memphis Markers is a simple program to import lists of notes into timeline markers within Davinci Resolve <p>\n<p>GPL 3 &copy; 2024 Brendon Rathbone.</p>'
 URL = "https://paypal.me/ambustion"
 
 TimelineText = "Timeline Clips"
@@ -107,7 +107,7 @@ ColorListVals = dict(Blue=[0, 0, 255], Green=[0, 255, 0], Yellow=[255, 255, 0], 
                      Apricot=[255, 170, 0], Lime=[170, 255, 0], Olive=[0, 85, 0], Teal=[0, 170, 127],
                      Navy=[0, 0, 127], Violet=[100, 48, 145], Tan=[170, 170, 127], Beige=[245, 245, 184],
                      Brown=[95, 91, 71], Chocolate=[95, 83, 69])
-
+#MetaDataList =
 AvidTracks = ["V1","V2","V3","V4","V5","V6","V7","V8"]
 
 FUColors = {}
@@ -208,8 +208,11 @@ def Add_Markers_To_Clips(notes):
 
 
 def TC_Clean(timecode):
+    ###need to add function to delete trailing digits or spaces at beginning/end
     numeric_string = re.sub("[^0-9]", "", timecode)
     TCFormat = ':'.join(numeric_string[i:i+2] for i in range(0, len(numeric_string), 2))
+    if len(TCFormat) != 11:
+        print(TCFormat + " is not a valid timecode")
     return TCFormat
 
 def create_table():
@@ -507,14 +510,15 @@ def GenerateTemplate():
 def addMarks(Marks):
     global prefix
     global NoteList
+    print("Adding Marks")
     itm = dlg.GetItems()
     prefix = itm["Prefix"].Text
     print("Prefix will be " + prefix)
-
+    print("adding markers to list cleaner...")
     cleanList = [sublist for sublist in NoteList if any(sublist)]
-    #print(cleanList)
+    print("adding marks to timeline...")
     for x in Marks:
-        #print(x)
+        print(x)
         try:
             Event = str(x[0])
             print(Event)
@@ -535,11 +539,7 @@ def addMarks(Marks):
             print("marker to frames " + str(int(s.getframes(x[2]))))
             print("startframe" + str(startFrame))
             print(frameID)
-
-
             print("Timecode" + Time)
-
-
             timeline.AddMarker(frameID, color, name, Description + " - " + Department, 1)
         except Exception as e:
             print("couldn't add marks")
@@ -880,7 +880,9 @@ dlg = disp.AddWindow({"WindowTitle": "Memphis Markers", "ID": "MyWin", "Geometry
                                                      ui.Button({"ID": "CSVButton", "Text": "Get CSV", "Weight": 0.5}),
                                                     ui.Button({"Weight": "0.25", "ID": 'SelectColorsButton',
                                                   "Text": 'Select Colors'}),
-                                                     ui.ComboBox({"ID":"CorFBox"})
+                                                     ui.ComboBox({"ID":"CorFBox"}),
+                                                     ###no function, plan to include headers check in future version.
+                                                     ui.CheckBox({"ID": "HeadersButton", "Text": "Headers?","Checkable":True, "Checked":True})
 
 
 
